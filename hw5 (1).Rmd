@@ -1,0 +1,234 @@
+---
+title: "Homework 5"
+author: "Vedant Grover"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, fig.height = 3)
+library(tidyverse)
+source("../../scripts/ggprob.R")
+```
+
+
+<br/>
+
+## Section I: Normal distribution
+
+
+### 1
+
+#### 1A
+
+What is the 0.975 quantile of the standard normal distribution?
+
+```{r}
+# insert code here
+qnorm(0.975,0,1)
+
+```
+
+#### 1B
+
+What is the area to the right of this quantile?
+
+It is 0.025
+
+
+### 2
+
+For the $\text{N}(500,100)$ distribution, find values $a$ and $b$ such that $a < b$, the area between $a$ and $b$ under the normal density is equal to 0.6,
+and $a$ and $b$ are equally distant from $\mu = 500$.
+
+```{r}
+# insert code here
+a_limit=qnorm(0.2,500,100)
+b_limit=qnorm(0.8,500,100)
+
+print(a_limit)
+print(b_limit)
+```
+
+
+
+### 3
+
+Graph the $\text{N}(500,100)$ distribution and shade the area between $a$ and $b$ from the previous problem.
+
+```{r}
+# insert code here
+gnorm(500, 100) +
+  geom_norm_fill(500, 100, a = a_limit, b = b_limit) +
+  theme_minimal()
+```
+
+
+
+
+<br/><br/>
+
+## Section II: Binomial inference
+
+- The data are in the file `chimpanzee.csv` (same as lecture or discussion).
+- These data are artificial, but created to match details from a 2011 PNAS paper on chimpanzee prosocial choice.
+- See the [Course Notes and Case Studies Chapter 18](https://bookdown.org/bret_larget/stat-240-case-studies/chimpanzees-and-prosocial-choice.html) for background on the data.
+
+
+
+### 4
+
+The goal of this question is to create a graphic to visualize confidence intervals for the proportion of times the prosocial token is selected by the chimpanzees.  Read in the `chimpanzee.csv` data file, then follow the steps below.
+
+- Make a plot that displays a **point** at the proportion of times the prosocial choice is made (i.e., the point estimate $\hat{p}$) in trials when a partner is present and in trials when a partner is not present.  These estimates are based on all the chimpanzee actors data combined.  This will result in two points on your graphic for this step.  The y-axis is for the estimated proportion and the x-axis is for the experimental condition ("with a partner" or "without a partner").
+- Add a thin blue (vertical) line segment for each point to visualize a 95% Wald confidence interval.  The lines should extend vertically from the lower bound to the upper bound of the confidence interval, and the point estimate from the previous step will be in the middle of the interval.
+-  Similarly, add a slightly thicker black segment to visualize the interval one standard error above and below the point estimates.
+- Add a horizontal red dashed line at p = 0.5.
+- Label axes appropriately and add an informative title to the plot.
+
+Note:  Make sure your point estimates are clearly visible on the graphic.  We recommend you add the 95% confidence interval first, then add the the SE interval, and finally the point estimate.
+
+*Hint:  Your final plot should have two vertical lines with the layered segments for the CIs and the SE intervals, a point in the center of each vertical line, and a horizontal dashed line.*
+
+```{r}
+# insert code here
+chimpanzee = read_csv("../../data/chimpanzee.csv")
+
+sum1 = chimpanzee %>% 
+  mutate(session_type = case_when(
+    partner == "none" ~ "no partner",
+    TRUE ~ "partner"
+  )) %>% 
+  group_by(actor, session_type) %>% 
+  summarize(prosocial = sum(prosocial),
+            selfish = sum(selfish),
+            n = prosocial + selfish,
+            pct_prosocial = 100*prosocial/n,
+            phat=prosocial/n)
+
+
+q4=sum1%>%group_by(session_type)%>%summarise(total_trials=sum(n),prosocial=sum(prosocial),proportion=prosocial/total_trials)
+
+
+
+q4=q4%>%mutate(se_wald=sqrt(proportion*(1-proportion)/total_trials),a_wald=proportion-qnorm(0.975)*se_wald,b_wald=proportion+qnorm(0.975)*se_wald)
+
+ggplot(q4,aes(x=session_type,y=proportion))+geom_errorbar(aes(ymin=a_wald,ymax=b_wald),color="blue")+geom_errorbar(aes(ymin=proportion-se_wald,ymax=proportion+se_wald),lwd=1)+geom_hline(yintercept=0.5,color="red",linetype="dashed")+geom_point(color="red")+xlab("Session Type")+ylab("Proportion of ProSocial Choices")+ggtitle("Session Type vs Confidence Interval for Prosocial Monkeys")
+
+
+```
+
+
+
+### 5
+
+Consider Chimpanzee actor B in the setting with a partner present.  Compute 99%, 95%, 90%, and 85% Wald confidence intervals for p, the probability of selecting the prosocial token (round the upper and lower bounds to two decimal places).
+
+Print out all four confidence intervals.
+
+```{r}
+# insert code here
+q5=sum1%>%group_by(actor,session_type)%>%summarise(total_trials=sum(n),prosocial=sum(prosocial),phat=prosocial/total_trials)
+
+
+binom_se =  function(n, p)
+{
+  return ( sqrt( p*(1-p)/n) )
+}
+
+binom_ci = function(est, se, conf=0.95)
+{
+  z = qnorm(1 - (1 - conf)/2)
+  me = z * se
+  ci = est + c(-1,1)*me
+  return(ci)
+}
+
+x = 60
+n = 90
+p_hat = x/n
+
+se_wald = binom_se(n, p_hat)
+
+conf_99=ci_wald = binom_ci(p_hat, se_wald,0.99)
+conf_99=round(ci_wald, 2)
+print(conf_99)
+
+conf_95=ci_wald = binom_ci(p_hat, se_wald,0.95)
+conf_95=round(ci_wald, 2)
+print(conf_95)
+
+conf_90=ci_wald = binom_ci(p_hat, se_wald,0.90)
+conf_90=round(ci_wald, 2)
+print(conf_90)
+
+conf_85=ci_wald = binom_ci(p_hat, se_wald,0.85)
+conf_85=round(ci_wald, 2)
+print(conf_85)
+
+```
+
+
+
+### 6
+
+Summarize the full chimpanzee data set when a partner is present with a data frame that has one row for each actor chimpanzee (A-G), and columns for the variables listed below.  Print out the entire final data frame.
+
+Note:  the variables below are for the trials *with* a partner.
+
+- `n`, the number of trials with a partner
+- `prosocial`, the number of prosocial choices with a partner
+- `selfish`, the number of selfish choices with a partner
+- `p_hat`, the observed proportion of prosocial choices in trials with a partner
+- `se_wald`, the estimated standard error using `p_hat` and `n`
+- `a_wald`, the lower boundary of the Wald 90% confidence interval
+- `b_wald`, the upper boundary of the Wald 90% confidence interval
+
+**Note:** Recall the "Wald" interval is just the standard interval we showed how to compute in lecture (i.e. use $\hat p=x/n$ to estimate $p$, use $\sqrt{\hat p(1-\hat p)/n}$ to estimate $SE(\hat p)$, then use $\hat p\pm z_{\alpha/2}\cdot SE(\hat p)$.)
+
+OPTIONAL: (you can also include these if you feel like it, but they are not required)
+
+- `p_tilde`, the Agresti-Coull point estimate of `p`
+- `se_agresti`, the estimated standard error from the Agresti-Coull method
+- `a_agresti`, the lower boundary of the Agresti-Coull 90% confidence interval
+- `b_agresti`, the upper boundary of the Agresti-Coull 90% confidence interval
+
+```{r}
+# insert code here
+sum1_wide = sum1 %>% filter(session_type=="partner")%>%
+  group_by(actor) %>% summarise(n=prosocial+selfish,prosocial=sum(prosocial),selfish=sum(selfish),p_hat=prosocial/n)
+
+sum1_wide=sum1_wide%>%mutate(se_wald=sqrt(p_hat*(1-p_hat)/n),a_wald=p_hat-qnorm(0.95)*se_wald,
+                             b_wald=(p_hat+qnorm(0.95)*se_wald))
+  
+
+print(sum1_wide)
+
+```
+
+
+
+### 7
+
+- Using the table from previous question, make a plot with a line segment for each actor chimpanzee displaying the Wald 90% confidence interval (optional: also display one for the Agresti 90% confidence interval).
+- Add a point representing the point estimate to each interval.
+- Plot the line segments for each actor close to each other for easy comparison.
+- Add a horizontal black dashed line at $p=0.5$.
+- Label axes appropriately and add an informative title to the plot.
+
+*Hint:  The `actor` values are strings, which are plotted at 1, 2, ..., 7 on the x-axis (but labeled as the actor's letter A:G).  In order to plot the Wald and Agresti confidence intervals for each actor near each other (and not overlapping), you may consider using `as.integer(as.factor(actor))` plus some small number (e.g., 0.15) to move the x-axis values for one of the intervals slightly.  The result is for one intervals (e.g., Wald) to be plot at the integer values (1:7), and the other interval (e.g., Agresti-Coull) to be plotted at 1.15, 2.15, ..., 7.15.*
+
+```{r}
+# insert code here
+ggplot(sum1_wide,aes(x=actor,y=p_hat))+geom_point()+geom_errorbar(aes(ymin=a_wald,ymax=b_wald))+geom_hline(yintercept = 0.5,linetype="dashed")+xlab("Chimpanzee Actor Groups")+ylab("Wald 90% Confidence Interval")+ggtitle("Chimpanzee Actors vs Confidence Level at Wald 90%")
+
+```
+
+
+
+### 8
+
+Suppose we computed a 95% confidence interval for the proportion of times one of the actor chimpanzees, say Chimpanzee A, selected the prosocial token to be [0.585,	0.748].  Can we say that there is a 95% probability that the interval [0.585,	0.748] contains the true proportion for selecting the prosocial token? Briefly explain your answer.
+
+For 100(1-alpha)% ,it means that there is 100*(1-alpha)% chance that the true population parameter will be in the given confidence interval or in other words we can say that 100*(1-alpha)% confidence interval means there is 100* (1-alpha)% chance we are talking about the null hypothesis is true.
+
+So, yes, we can say that 95% probability that the interval [0.585,0.748] contains the true proportion for selecting the prosocial token.
