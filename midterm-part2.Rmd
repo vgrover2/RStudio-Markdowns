@@ -1,0 +1,243 @@
+---
+title: "Midterm - Part 2"
+author: "REPLACE WITH NAME"
+output: html_document
+---
+  
+<style>#header{margin-bottom:30px;}div.level2{margin:40px 0 80px;}div.level3{margin-top:40px;}</style>
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T,message=F,warning=F,fig.height=5,fig.width=7,fig.align="center",error=TRUE)
+library(tidyverse)
+library(lubridate)
+library(readxl)
+```
+
+
+## Important info!
+
+1. You can use all notes, files, videos, and [cheat sheets](https://www.rstudio.com/resources/cheatsheets/) presented in class or found on canvas. You may also reference R documentation manuals for any function. However, you may NOT search for other help online or discuss exam materials with anyone.
+2. **All plots MUST have appropriate titles and labels**. Failure to do so may cause you to lose points.
+3. If you are asked to print out rows of a data frame, you must do so, or you may lose points.
+4. It's always Y vs X, NOT X vs Y. If we say A vs B, it means A should be on the vertical axis, and B should be on the horizontal axis. Switching these is incorrect!
+5. The option "error=TRUE" has been added on line 10 above in the setup chunk. This enables the file to knit even if there are errors. This to ensure you can produce some kind of HTML file output, which helps us grade faster. Remember to double **check your HTML and Rmd files BEFORE submitting**. Submitting a file with errors, or submitting the wrong file may also cause you to lose points.
+6. If you **have any questions, please email your instructor and also CC all TAs in your section** for the fastest response. Failing to do so may result in a slower response time. We will try to respond to your email as soon as we can.
+7. If there is a **problem with submitting on canvas, please email us ALL exam files IMMEDIATELY**! Failure to do so may result in a 0 for the exam.
+8. We take academic honesty very seriously. Cheating of any kind will NOT be tolerated and may result in a 0 on the exam or even failing the class.
+
+
+
+# EPA air quality data
+
+For this part 2 of the midterm, we will be using Madison air pollution data provided by the Environmental Protection Agency (EPA), which collects data about air quality using monitoring stations throughout the country.
+
+
+
+## Importing data
+
+The chunk below should automatically download and import the `air.csv` file from the department server where I'm temporarily hosting it (assuming you have your packages loaded from the setup chunk above and you have no network issues). If you're having trouble with this for some reason, you can also try directly downloading the [linked file](https://pages.stat.wisc.edu/~bwu62/air.csv) or from Canvas.
+
+```{r}
+# import file
+air = read_csv("https://pages.stat.wisc.edu/~bwu62/air.csv")
+```
+
+We can double check the files have all been read in correctly. There should be 15127 rows and 11 columns.
+
+```{r}
+dim(air)
+head(air)
+```
+
+
+
+
+
+## Question 1 - data cleaning <small>(5pts)</small>
+
+Perform the following basic data cleaning/processing operations.
+
+1. Select ONLY the following columns that we care about the most:
+   - `Date`: ID of the station that made the observation
+   - `Overall.AQI.Value`: Air Quality Index value, used by EPA to report quality. See this for more info [aqi chart](https://miro.medium.com/max/1400/0*vzT6W-NevzPXAKls.png).
+   - `Main.Pollutant`: The primary pollutant causing the measured AQI value (there are several different kinds of pollutants tracked)
+   - `Site.Name.of.Overall.AQI`: What station reported the measurement.
+2. Rename the columns above (in the same order) `date`, `aqi`, `main.pollutant`, `site`.
+3. Parse the `date` column into a standard date format.
+4. Add `year` and `month` columns to the data frame by extracting them from the `date` column. **Make sure `month` uses abbreviated labels (i.e. Jan, Feb, etc.)** (if this displays in a different language, run `Sys.setlocale("LC_ALL","English")` and then try again).
+
+After doing all these steps and saving the result, **print out the first few rows** of your data frame!
+
+
+```{r}
+# code here
+
+```
+
+
+
+
+
+## Question 2 - Preliminary data exploration <small>(1pt each part, 5pts total)</small>
+
+Let's start by doing some preliminary exploration of the data. For each of the question parts below, read the question carefully, then write a small line (or lines) of R code to find the answer, and write a sentence response in the space provided.
+
+
+### 2A
+
+Are there any missing values in the AQI column? If yes, how many?
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 2B
+
+What are the earliest and latest dates available in the dataset? You can use either tidyverse or base R.
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 2C
+
+Report the min, max, mean, median, and sd of AQI. You can use tidyverse or base R here.
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 2D
+
+How many different main pollutants exist? List them all. *Hint: you can pull out the vector and just use the base R function `unique`.*
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 2E
+
+How many different sites exist? List **a few** of them.
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+
+
+
+
+## Question 3 - Summarizing data <small>(5pts)</small>
+
+We want to visualize the data over time, but first we need to summarize it. Do the following steps in order:
+
+1. Add a new column in the data frame called `period` denoting which period of time we are in (it will become clear later why we do this). The value of `period` should be a STRING and should be set as:
+   - "2023" if the observation is in 2023, or
+   - "40-year avg" if the observation is 2022 or earlier.
+   (*Hint: For this part, you can use tidyverse or base R. If you get stuck, you can earn partial credit by doing this outside R as well (for example with a text editor or with Excel), since this is an important step that other parts depend on).
+2. Create a new data frame called `aqi.monthly` by first grouping by `year`, `month`, and `period` and then finding the mean AQI value in each group. **Print the FIRST FEW rows of this data frame!**
+3. Ignoring the `period` variable for now, pivot the data frame to make a table with each year on a row, each month in a column, and each cell containing the mean AQI value over that month.
+   - Use `select` to temporarily remove the `period` column in the summary output, we don't need it for now.
+   - Please make sure the rows and columns are both sorted in proper order (i.e. columns should read Jan, Feb, ..., Dec, and the rows should read 2023, 2022, ..., 1980)
+   - **Print this ENTIRE table by using `print` with the `n=Inf` argument!)**
+4. Write a brief sentence or two describing anything interesting you notice in this summary table.
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+
+
+
+
+## Question 4 - Visualizing data <small>(5pts)</small>
+
+We've done the hardest parts! Now let's plot the AQI data, comparing 2023's observations so far with historic averages. Make a combination scatter and smoothed line plot using the `aqi.monthly` data frame. Put **month on the horizontal axis and mean aqi on the vertical axis**. You also need to add the aesthetics `group=period` and `color=period` to help R group and color the data appropriately.
+
+After you've set the appropriate aesthetics, add a scatter plot layer and a smoothed curve layer. Make sure to turn OFF the standard error shading around the smoothed curve by adding the argument `se=FALSE` to your `geom_smooth` function.
+
+If you did everything correctly, you should be able to clearly see two curves: the 40 year average curve as well as the 2023 curve which is significantly higher than the 40 year average curve during the summer months. Don't forget to add APPROPRIATE and DESCRIPTIVE **axes labels and a title**!
+
+Describe the pattern you see here in a few sentences. What do you notice? How does this compare to the summary table we produced in the previous step? Does this align with your prior expectations?
+
+
+
+
+
+## Question 5 - More probing/discussions <small>(1, 1, 1, 2pts respectively; 5pts total)</small>
+
+The EPA uses PM2.5 (number of fine particles 2.5 micrometers or smaller) as well as levels of other pollutants (if present) to calculate AQI, which represents how healthy the air is to breathe. AQI value descriptions:
+
+  - 50 or under is considered good,
+  - 51-100 is considered satisfactory,
+  - 101-150 is considered potentially unhealthy for some sensitive groups of people,
+  - 151-200 is considered unhealthy for everyone,
+  - 201-300 is considered very unhealthy,
+  - and 301+ is considered extremely hazardous.
+
+Again for each of the question parts below, read the question carefully, then write a small line of R code to find the answer, and write a sentence response in the space provided.
+
+### 5A
+
+For years before 2023 (i.e. 2022 and earlier), on average what proportion of days have AQI values considered potentially unhealthy or worse?
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 5B
+
+Repeat the previous part for 2023. What proportion of days so far in THIS year have AQI values considered potentially unhealthy or worse? Is this higher or lower than the average and by how much? (e.g. by a little or by a lot?)
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 5C
+
+Let's look at single-day AQI measurement records (i.e. use the data frame you get after the data cleaning steps in question 1, do NOT use the summarized data frames). Find and show the top 10 worst (i.e. highest) single-day AQI measurements in this dataset, sorted with the highest AQI at the top, and show only the columns `date`, `aqi`, and `main.pollutant`.
+
+Write a few sentences discussing this output. Which date has the worse single-day AQI measurement in this dataset? Which other dates were also really high? What do you notice about the pollutant types? Does this data align with your prior expectations?
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
+### 5D
+
+Come up with one other **interesting and useful** exploration/summary/statistic/visualization of the dataset. Explain why you chose this, why you think it's interesting, and what it shows.
+
+```{r}
+# code here
+
+```
+
+> REPLACE THIS TEXT WITH YOUR RESPONSE
+
